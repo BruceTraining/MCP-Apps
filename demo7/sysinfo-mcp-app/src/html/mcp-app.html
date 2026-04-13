@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    color-scheme meta tag tells the browser this page supports both light
+    and dark modes, enabling the CSS light-dark() function and ensuring
+    system UI elements (scrollbars, form controls) match the active scheme.
+  -->
+  <meta name="color-scheme" content="light dark">
+  <title>System Status</title>
+</head>
+<body>
+  <!--
+    Main container for the entire dashboard.
+    The ".main" class is referenced by mcp-app.ts to apply host safe area
+    inset padding (for notched displays or host chrome).
+  -->
+  <main class="main">
+
+    <!--
+      Dashboard header — displays the title and the timestamp of the most
+      recent data refresh. The <time> element is updated dynamically by
+      mcp-app.ts each time renderDashboard() is called.
+    -->
+    <header class="dashboard-header">
+      <h1 class="dashboard-title">System Status</h1>
+      <p class="dashboard-subtitle">Updated: <time id="last-updated">—</time></p>
+    </header>
+
+    <!--
+      Loading state — shown while the server is collecting system data.
+      Hidden once data arrives and the dashboard is rendered.
+      Toggled by mcp-app.ts via the ontoolinput and ontoolresult callbacks.
+    -->
+    <div id="loading-state" class="loading-state">
+      <p>Loading system information…</p>
+    </div>
+
+    <!--
+      Dashboard card grid — initially hidden (via the "hidden" attribute).
+      Revealed by mcp-app.ts once the first set of system data is received.
+      Uses a responsive CSS grid layout defined in mcp-app.css.
+    -->
+    <div id="dashboard" class="cards" hidden>
+
+      <!--
+        OS Card — displays operating system details.
+        Uses a definition list (<dl>) for key-value pairs.
+        Each <dd> element has a unique ID so mcp-app.ts can populate it
+        with data from SystemInfoStructured.os.
+      -->
+      <div class="card">
+        <h2 class="card-title">Operating System</h2>
+        <dl class="stat-list">
+          <dt>Hostname</dt><dd id="os-hostname">—</dd>
+          <dt>Platform</dt><dd id="os-platform">—</dd>
+          <dt>Distro</dt><dd id="os-distro">—</dd>
+          <dt>Uptime</dt><dd id="os-uptime">—</dd>
+        </dl>
+      </div>
+
+      <!--
+        CPU Card — displays processor info, load bar, and temperature.
+        The load bar is a .progress-track / .progress-fill pair whose
+        width and colour class are set dynamically by setBar() in mcp-app.ts.
+        The temperature row (#cpu-temp-row) is hidden by default and only
+        shown if the server reports a valid temperature reading.
+      -->
+      <div class="card">
+        <h2 class="card-title">CPU</h2>
+        <dl class="stat-list">
+          <dt>Processor</dt><dd id="cpu-brand">—</dd>
+          <dt>Cores</dt><dd id="cpu-cores">—</dd>
+        </dl>
+        <!-- CPU load metric with progress bar -->
+        <div class="metric">
+          <div class="metric-header">
+            <span class="metric-label">Load</span>
+            <span class="metric-value" id="cpu-load">—</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="cpu-load-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <!-- CPU temperature — hidden if unavailable (e.g. macOS) -->
+        <div class="metric" id="cpu-temp-row" hidden>
+          <div class="metric-header">
+            <span class="metric-label">Temperature</span>
+            <span class="metric-value" id="cpu-temp">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!--
+        Memory Card — displays RAM usage with a progress bar and breakdown.
+        The progress bar colour changes based on usage thresholds:
+          green (<60%), amber (60-79%), red (80%+).
+      -->
+      <div class="card">
+        <h2 class="card-title">Memory</h2>
+        <div class="metric">
+          <div class="metric-header">
+            <span class="metric-label">Usage</span>
+            <span class="metric-value" id="mem-usage">—</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="mem-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <dl class="stat-list">
+          <dt>Total</dt><dd id="mem-total">—</dd>
+          <dt>Used</dt><dd id="mem-used">—</dd>
+          <dt>Free</dt><dd id="mem-free">—</dd>
+        </dl>
+      </div>
+
+      <!--
+        Battery Card — content is fully replaced by mcp-app.ts.
+        If no battery is detected, shows "No battery detected".
+        Otherwise, shows a charge level bar with charging status.
+      -->
+      <div class="card">
+        <h2 class="card-title">Battery</h2>
+        <div id="battery-content">—</div>
+      </div>
+
+      <!--
+        Disk Usage Card — spans the full grid width (card--wide).
+        The #disk-list container is populated by mcp-app.ts with a
+        progress bar for each mounted filesystem/partition.
+      -->
+      <div class="card card--wide">
+        <h2 class="card-title">Disk Usage</h2>
+        <div id="disk-list" class="disk-list"></div>
+      </div>
+
+      <!--
+        Network Interfaces Card — spans the full grid width.
+        Populated by mcp-app.ts with one row per active interface,
+        showing the interface name, IP address, and up/down state.
+      -->
+      <div class="card card--wide">
+        <h2 class="card-title">Network Interfaces</h2>
+        <div id="network-list"></div>
+      </div>
+
+      <!--
+        Top Processes Card — spans the full grid width.
+        Contains a scrollable table of the top 15 processes by CPU usage.
+        The #proc-count span shows a summary like "(5 running / 312 total)".
+        Table rows are generated by mcp-app.ts in the #process-tbody.
+      -->
+      <div class="card card--wide">
+        <h2 class="card-title">
+          Top Processes
+          <span class="card-title-note" id="proc-count"></span>
+        </h2>
+        <div class="table-wrap">
+          <table class="process-table">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>Name</th>
+                <th>CPU %</th>
+                <th>MEM %</th>
+              </tr>
+            </thead>
+            <tbody id="process-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!--
+      Action row — contains the two main action buttons:
+        1. "Refresh Data" — calls get-system-info again via app.callServerTool()
+        2. "Add to Conversation" — sends the text summary to the host conversation
+      Both buttons are wired up in mcp-app.ts with click event listeners.
+    -->
+    <div class="action-row">
+      <button id="refresh-btn" class="btn btn--refresh">Refresh Data</button>
+      <button id="convo-btn" class="btn btn--convo">Add to Conversation</button>
+    </div>
+
+  </main>
+
+  <!--
+    Load the client-side TypeScript module.
+    Vite processes this during build, bundling all dependencies and CSS
+    into a single self-contained HTML file (via vite-plugin-singlefile).
+  -->
+  <script type="module" src="/src/mcp-app.ts"></script>
+</body>
+</html>

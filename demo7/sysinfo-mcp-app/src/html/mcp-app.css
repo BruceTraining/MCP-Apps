@@ -1,0 +1,481 @@
+/* ============================================================
+   mcp-app.css — Dashboard-Specific Styles
+   ============================================================
+
+   This stylesheet defines all the visual styles specific to the
+   System Status dashboard. It builds on top of the design tokens
+   defined in global.css and adds dashboard-specific variables,
+   layout, card styles, progress bars, tables, and buttons.
+
+   The styles are organized into logical sections:
+     1. Dashboard-specific CSS variables
+     2. Layout (main container)
+     3. Header
+     4. Loading state
+     5. Card grid system
+     6. Stat lists (key/value pairs)
+     7. Metrics and progress bars
+     8. Disk list
+     9. Network interface list
+    10. Process table
+    11. Action buttons
+   ============================================================ */
+
+
+/* ============================================================
+   Dashboard-specific variables
+   ============================================================
+   These custom properties extend the global design tokens with
+   values specific to the dashboard UI. They use the CSS
+   light-dark() function for automatic light/dark mode support.
+   ============================================================ */
+
+:root {
+  /* Card background — slightly tinted surface colour */
+  --card-bg: light-dark(#f8fafc, #1e2028);
+  /* Card border — subtle separator using semi-transparent black/white */
+  --card-border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.07));
+  /* Progress bar track background (the empty portion) */
+  --progress-track: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+
+  /*
+   * Progress bar fill colours — used by the loadClass() function in
+   * mcp-app.ts to colour-code usage levels:
+   *   --fill-low:    green  — healthy usage (below 60%)
+   *   --fill-medium: amber  — moderate usage (60-79%)
+   *   --fill-high:   red    — critical/warning level (80%+)
+   */
+  --fill-low: #22c55e;
+  --fill-medium: #f59e0b;
+  --fill-high: #ef4444;
+
+  /* Muted text colour for labels and secondary information */
+  --color-text-muted: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.45));
+
+  /*
+   * Network interface state colours:
+   *   --color-state-up:   green — interface is active
+   *   --color-state-down: red   — interface is inactive
+   */
+  --color-state-up: #22c55e;
+  --color-state-down: #ef4444;
+
+  /* Warning colour for high CPU process values (>= 10%) */
+  --color-val-warn: #ef4444;
+
+  /* Table row border — very subtle separator between process rows */
+  --table-row-border: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+}
+
+
+/* ============================================================
+   Layout — Main Container
+   ============================================================
+   The .main container constrains the dashboard width and provides
+   consistent padding and vertical spacing between sections.
+   Max-width of 660px keeps the dashboard readable on wide screens.
+   ============================================================ */
+
+.main {
+  width: 100%;
+  max-width: 660px;
+  box-sizing: border-box;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+
+/* ============================================================
+   Header
+   ============================================================
+   Flexbox layout with the title on the left and the "last updated"
+   timestamp on the right. Wraps on narrow screens.
+   ============================================================ */
+
+.dashboard-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.dashboard-title {
+  font-size: var(--font-heading-lg-size);
+  line-height: var(--font-heading-lg-line-height);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+/* Subdued timestamp text */
+.dashboard-subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+
+/* ============================================================
+   Loading State
+   ============================================================
+   Centered message shown while waiting for system data.
+   Toggled on/off via the "hidden" attribute in mcp-app.ts.
+   ============================================================ */
+
+.loading-state {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--color-text-muted);
+}
+
+
+/* ============================================================
+   Card Grid
+   ============================================================
+   Responsive grid layout for the dashboard cards.
+   Uses CSS auto-fit with a minimum column width of 270px, so
+   cards automatically reflow from 1 to 2+ columns as the
+   viewport widens. Cards with .card--wide span the full width.
+   ============================================================ */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* Force wide cards (disk, network, processes) to span all columns */
+.card--wide {
+  grid-column: 1 / -1;
+}
+
+/* Individual card styling — rounded bordered container */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Card title — small uppercase label style */
+.card-title {
+  font-size: var(--font-heading-sm-size);
+  line-height: var(--font-heading-sm-line-height);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Inline note within a card title (e.g. process count) — normal weight */
+.card-title-note {
+  font-weight: var(--font-weight-normal);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+
+/* ============================================================
+   Stat List — Key/Value Pairs
+   ============================================================
+   Uses a 2-column CSS grid for <dl> definition lists.
+   The <dt> (label) is muted and the <dd> (value) is bold.
+   Used in the OS, CPU, and Memory cards.
+   ============================================================ */
+
+.stat-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--spacing-sm);
+  row-gap: 0.15rem;
+  margin: 0;
+  font-size: 0.875em;
+}
+
+/* Label column — muted colour, no wrapping */
+.stat-list dt {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Value column — bold with text truncation for long values */
+.stat-list dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Not available" placeholder text style */
+.stat-na {
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+  font-size: 0.875em;
+}
+
+
+/* ============================================================
+   Metrics / Progress Bars
+   ============================================================
+   Used for CPU load, memory usage, disk usage, and battery level.
+   Each metric consists of:
+     - .metric-header: label on the left, value on the right
+     - .progress-track: the background track (8px tall, rounded)
+     - .progress-fill: the coloured fill bar (width set dynamically)
+
+   Fill colours are applied via modifier classes:
+     .fill--low    = green  (healthy, < 60%)
+     .fill--medium = amber  (moderate, 60-79%)
+     .fill--high   = red    (critical, 80%+)
+   ============================================================ */
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875em;
+}
+
+/* Muted label text (e.g. "Load", "Usage") */
+.metric-label {
+  color: var(--color-text-muted);
+}
+
+/* Monospace variant for mount paths in disk metrics */
+.metric-label--mono {
+  font-family: var(--font-mono);
+}
+
+/* Bold numeric value with tabular number spacing for alignment */
+.metric-value {
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress bar track — the grey background rail */
+.progress-track {
+  height: 8px;
+  background-color: var(--progress-track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Progress bar fill — animated width transitions for smooth updates */
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Fill colour modifier classes — applied dynamically by loadClass() */
+.fill--low    { background-color: var(--fill-low); }    /* Green — healthy */
+.fill--medium { background-color: var(--fill-medium); }  /* Amber — moderate */
+.fill--high   { background-color: var(--fill-high); }    /* Red — critical */
+
+
+/* ============================================================
+   Disk List
+   ============================================================
+   Vertical list of disk usage items. Each item is a .metric
+   wrapper generated dynamically by mcp-app.ts.
+   ============================================================ */
+
+.disk-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.disk-item {
+  /* Each disk item is a .metric wrapper — no additional styles needed */
+}
+
+
+/* ============================================================
+   Network Interface List
+   ============================================================
+   Horizontal layout for each network interface row showing:
+     - Interface name (monospace, bold, fixed min-width)
+     - IP address (monospace, muted, fills remaining space)
+     - State badge (uppercase, coloured green/red)
+   ============================================================ */
+
+.network-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.875em;
+  padding: 0.2rem 0;
+}
+
+/* Interface name — monospace bold with minimum width for alignment */
+.network-iface {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-bold);
+  min-width: 90px;
+}
+
+/* IP address — monospace, muted, takes remaining horizontal space */
+.network-ip {
+  font-family: var(--font-mono);
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+/* State label — small uppercase badge */
+.network-state {
+  font-weight: var(--font-weight-bold);
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* State colour modifiers */
+.state--up   { color: var(--color-state-up); }    /* Green — interface active */
+.state--down { color: var(--color-state-down); }  /* Red — interface inactive */
+
+
+/* ============================================================
+   Process Table
+   ============================================================
+   Scrollable table showing the top 15 processes by CPU usage.
+   Uses tabular-nums for aligned numeric columns.
+   The .val--warn class highlights CPU values >= 10% in red.
+   ============================================================ */
+
+/* Horizontal scroll wrapper for narrow viewports */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.process-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+
+/* Table header cells — left-aligned, muted, bold, no wrapping */
+.process-table th {
+  text-align: left;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--card-border);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+/* Table data cells — tabular numbers for column alignment */
+.process-table td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--table-row-border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* PID column — muted monospace for readability */
+.proc-pid {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* Process name column — monospace with truncation for long names */
+.proc-name {
+  font-family: var(--font-mono);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Warning highlight for high CPU values (applied when cpuPercent >= 10) */
+.val--warn {
+  color: var(--color-val-warn);
+  font-weight: var(--font-weight-bold);
+}
+
+
+/* ============================================================
+   Action Row — Gradient Buttons
+   ============================================================
+   Contains the "Refresh Data" and "Add to Conversation" buttons.
+   Centered horizontally with equal flex sizing.
+
+   Each button uses a gradient background and subtle shadow for
+   visual distinction. Hover/active states provide tactile feedback.
+   ============================================================ */
+
+.action-row {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  padding-top: var(--spacing-xs);
+}
+
+/* Base button styles shared by both action buttons */
+.btn {
+  flex: 1;
+  max-width: 240px;
+  padding: 0.7rem 1.25rem;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-family: inherit;
+  font-size: var(--font-text-md-size);
+  font-weight: var(--font-weight-bold);
+  color: #ffffff;
+  cursor: pointer;
+  /* Smooth brightness and position transitions for hover/active states */
+  transition: filter 0.15s ease, transform 0.1s ease;
+  /* Text shadow for better readability on gradient backgrounds */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Hover state — slightly brighter and lifted */
+.btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Active/pressed state — pushed down and slightly dimmed */
+.btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* Disabled state — reduced opacity, no cursor, no transforms */
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/*
+ * "Refresh Data" button — blue gradient
+ * Gradient goes from bright blue → deeper blue → indigo
+ */
+.btn--refresh {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #4f46e5 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/*
+ * "Add to Conversation" button — purple-to-pink gradient
+ * Gradient goes from violet → purple → pink
+ */
+.btn--convo {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #db2777 100%);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}

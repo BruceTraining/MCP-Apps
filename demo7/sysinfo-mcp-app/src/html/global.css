@@ -1,0 +1,183 @@
+/*
+ * ============================================================
+ * global.css — Base Styles and Design Token Fallbacks
+ * ============================================================
+ *
+ * This stylesheet defines the global base styles and CSS custom property
+ * (design token) fallbacks used throughout the MCP App dashboard.
+ *
+ * IMPORTANT: The MCP host application may override these values at runtime
+ * via the host context. The `applyHostStyleVariables()` function in
+ * mcp-app.ts injects the host's CSS custom properties, which take
+ * precedence over these defaults. These values serve as sensible
+ * fallbacks for when the app is rendered standalone (e.g. during
+ * development) or when the host doesn't provide specific values.
+ *
+ * The `light-dark()` CSS function is used extensively here. It
+ * automatically selects the first value in light mode and the second
+ * value in dark mode, based on the `color-scheme` property.
+ *
+ * Design token categories defined here:
+ *   - Colours (text, background, accent, info, ring)
+ *   - Typography (font families, weights, sizes, line heights)
+ *   - Spacing (derived from the base font size using a scale multiplier)
+ *   - Borders (radius, width)
+ */
+
+:root {
+  /*
+   * Enable both light and dark colour schemes.
+   * This tells the browser to adjust system UI elements (scrollbars,
+   * form controls, etc.) based on the active colour scheme preference.
+   */
+  color-scheme: light dark;
+
+  /*
+   * ---- Colour Tokens ----
+   * These use the CSS light-dark() function to provide automatic
+   * light/dark mode support. The first value is for light mode,
+   * the second is for dark mode.
+   */
+
+  /* Primary text colour — dark on light backgrounds, light on dark */
+  --color-text-primary: light-dark(#1f2937, #f3f4f6);
+  /* Inverse text — for use on contrasting backgrounds */
+  --color-text-inverse: light-dark(#f3f4f6, #1f2937);
+  /* Info/link text colour — blue tones */
+  --color-text-info: light-dark(#1d4ed8, #60a5fa);
+
+  /* Primary background — white in light mode, near-black in dark mode */
+  --color-background-primary: light-dark(#ffffff, #1a1a1a);
+  /* Inverse background — for contrasting sections */
+  --color-background-inverse: light-dark(#1a1a1a, #ffffff);
+  /* Info background — subtle blue tint for info panels */
+  --color-background-info: light-dark(#eff6ff, #1e3a5f);
+
+  /* Focus ring colour for interactive elements */
+  --color-ring-primary: light-dark(#3b82f6, #60a5fa);
+
+  /* ---- Border Tokens ---- */
+  --border-radius-md: 6px;
+  --border-width-regular: 1px;
+
+  /*
+   * ---- Typography Tokens ----
+   * Font stacks follow the system-ui convention for maximum native feel.
+   * Emoji fonts are included for cross-platform emoji rendering.
+   */
+
+  /* Sans-serif font stack — used for body text and UI elements */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  /* Monospace font stack — used for PIDs, IPs, mount paths, and code */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Font weight tokens */
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+
+  /* Base body text size and line height */
+  --font-text-md-size: 1rem;
+  --font-text-md-line-height: 1.5;
+
+  /*
+   * ---- Heading Size Scale ----
+   * Provides a consistent typographic hierarchy from h1 (3xl) to h6 (sm).
+   * The dashboard primarily uses heading-lg (dashboard title) and
+   * heading-sm (card titles).
+   */
+  --font-heading-3xl-size: 2.25rem;
+  --font-heading-3xl-line-height: 1.1;
+  --font-heading-2xl-size: 1.875rem;
+  --font-heading-2xl-line-height: 1.2;
+  --font-heading-xl-size: 1.5rem;
+  --font-heading-xl-line-height: 1.25;
+  --font-heading-lg-size: 1.25rem;
+  --font-heading-lg-line-height: 1.3;
+  --font-heading-md-size: 1rem;
+  --font-heading-md-line-height: 1.4;
+  --font-heading-sm-size: 0.875rem;
+  --font-heading-sm-line-height: 1.4;
+
+  /*
+   * ---- Spacing Scale ----
+   * Derived from the base text size (--spacing-unit) using multipliers.
+   * This keeps spacing proportional to the typography and allows the
+   * host to scale everything by overriding --font-text-md-size.
+   *
+   * xs = 0.25rem, sm = 0.5rem, md = 1rem, lg = 1.5rem (at default 1rem base)
+   */
+  --spacing-unit: var(--font-text-md-size);
+  --spacing-xs: calc(var(--spacing-unit) * 0.25);
+  --spacing-sm: calc(var(--spacing-unit) * 0.5);
+  --spacing-md: var(--spacing-unit);
+  --spacing-lg: calc(var(--spacing-unit) * 1.5);
+
+  /*
+   * ---- Accent Colour ----
+   * Used for branded interactive elements. Can be customised per-app.
+   */
+  --color-accent: #2563eb;
+  --color-text-on-accent: #ffffff;
+}
+
+/*
+ * Apply border-box sizing globally so padding and borders are included
+ * in element width/height calculations. This prevents layout surprises.
+ */
+* {
+  box-sizing: border-box;
+}
+
+/*
+ * Base typography applied to the entire document.
+ * Uses the design token custom properties defined above, which may be
+ * overridden by the MCP host at runtime.
+ */
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--font-text-md-size);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--font-text-md-line-height);
+  color: var(--color-text-primary);
+}
+
+/*
+ * ---- Heading Styles ----
+ * Map each heading level to its corresponding size token.
+ * This ensures headings scale consistently with the design system.
+ */
+h1 {
+  font-size: var(--font-heading-3xl-size);
+  line-height: var(--font-heading-3xl-line-height);
+}
+h2 {
+  font-size: var(--font-heading-2xl-size);
+  line-height: var(--font-heading-2xl-line-height);
+}
+h3 {
+  font-size: var(--font-heading-xl-size);
+  line-height: var(--font-heading-xl-line-height);
+}
+h4 {
+  font-size: var(--font-heading-lg-size);
+  line-height: var(--font-heading-lg-line-height);
+}
+h5 {
+  font-size: var(--font-heading-md-size);
+  line-height: var(--font-heading-md-line-height);
+}
+h6 {
+  font-size: var(--font-heading-sm-size);
+  line-height: var(--font-heading-sm-line-height);
+}
+
+/* Monospace elements use the monospace font stack */
+code, pre, kbd {
+  font-family: var(--font-mono);
+  font-size: 1em;
+}
+
+/* Bold elements use the bold weight token */
+b, strong {
+  font-weight: var(--font-weight-bold);
+}
